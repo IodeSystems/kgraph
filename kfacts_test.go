@@ -483,3 +483,45 @@ func TestATypodKindIsNotReadAsARelation(t *testing.T) {
 		t.Errorf("a typo'd body key must stay a 'declares no kind' error; got %v", ds)
 	}
 }
+
+// TestAWithdrawnRelationIsNotARelation.
+//
+// `OpWithdraw` folds to `status: withdrawn` on the entry. For a NODE that is
+// right: the claim stays visible with its status and its reason, so a reader can
+// see we were wrong and why. An EDGE has no status to carry and should not grow
+// one — a relation is not something anybody reasons about the truth of, it holds
+// or it does not.
+//
+// Before this, withdrawing an edge wrote a correct line to the log, folded it,
+// and left the edge standing. The log said the relation was retracted and the
+// graph went on computing with it. caselit found it while building `unbind`,
+// which is the act its own auditor had been instructing for as long as the
+// provenance rules have existed.
+func TestAWithdrawnRelationIsNotARelation(t *testing.T) {
+	const src = "- id: c-one\n  claim: The strip is held by Halloway\n  status: asserted\n" +
+		"- id: c-two\n  claim: The fence was moved in 2014\n  status: asserted\n" +
+		"- id: e-live\n  from: c-two\n  to: c-one\n  is: supports\n" +
+		"- id: e-gone\n  from: c-one\n  to: c-two\n  is: supports\n  status: withdrawn\n"
+	doc, diags := ParseEntries(Dialect{}, "t.md", []byte(src))
+	for _, d := range diags {
+		if d.Severity == SevError {
+			t.Fatalf("unexpected error: %s", d.Msg)
+		}
+	}
+	var live, gone bool
+	for _, e := range doc.Edges {
+		if e.Src == "c-two" && e.Dst == "c-one" {
+			live = true
+		}
+		if e.Src == "c-one" && e.Dst == "c-two" {
+			gone = true
+		}
+	}
+	if !live {
+		t.Error("the live relation did not survive; withdrawal took the wrong one")
+	}
+	if gone {
+		t.Error("a relation marked withdrawn still produced an edge — the log says it was " +
+			"retracted and the graph is still computing with it")
+	}
+}

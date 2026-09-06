@@ -778,6 +778,17 @@ func isEdgeEntry(m *yaml.Node) bool {
 // core table first, then the index's dialect — so a standalone edge can say
 // nothing a short-form edge could not. It is a second SURFACE, not a second
 // model.
+// edgeStatus reads an entry's `status:` without disturbing the parse above,
+// which routes everything it does not name into the annotation bag.
+func edgeStatus(m *yaml.Node) (string, bool) {
+	for i := 0; i+1 < len(m.Content); i += 2 {
+		if m.Content[i].Value == "status" {
+			return m.Content[i+1].Value, true
+		}
+	}
+	return "", false
+}
+
 func parseEdge(dl Dialect, path string, line int, m *yaml.Node) (*Edge, []Diag) {
 	var diags []Diag
 	bad := func(f string, a ...any) {
@@ -819,6 +830,24 @@ func parseEdge(dl Dialect, path string, line int, m *yaml.Node) (*Edge, []Diag) 
 	}
 	if isKey == "" {
 		bad("a relation must say what it `is:` — the relation type, e.g. `is: attests`")
+		return nil, diags
+	}
+	// A WITHDRAWN RELATION IS NOT A RELATION.
+	//
+	// `OpWithdraw` folds to `status: withdrawn` on the entry, and for a NODE that
+	// is exactly right: the claim stays visible, carrying its status and its
+	// reason, so a reader can see that we were wrong and why. An edge has no
+	// status to carry — `Edge` has no such field and should not grow one, because
+	// a relation is not a thing anybody reasons about the truth of; it either
+	// holds or it does not.
+	//
+	// So a withdrawn edge entry produces NO EDGE. Before this, withdrawing one
+	// wrote a correct line to the log, folded it to `status: withdrawn`, and left
+	// the edge standing — the log said the relation had been retracted and the
+	// graph went on computing with it. caselit found it building `unbind`, which
+	// is the act its own auditor had been instructing for as long as the
+	// provenance rules have existed.
+	if st, ok := edgeStatus(m); ok && Status(st) == SWithdrawn {
 		return nil, diags
 	}
 	// Resolve exactly as the node-authored form does, and in the same order: the

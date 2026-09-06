@@ -1,0 +1,1 @@
+text of deed.md

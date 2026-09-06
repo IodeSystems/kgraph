@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# build — the single entry point.
+#
+# It was a two-stage build while kgweb carried a pnpm UI. kgweb was retired
+# 2026-09-04 (see plan/split.md) and `kg verify` embeds its own verify.html, so
+# there is no asset step left and `go build ./...` works on a fresh clone with
+# nothing seeded first.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
+
+mkdir -p dist
+go build -o dist/kg ./cmd/kg
+echo "built dist/kg" >&2

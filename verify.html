@@ -1,0 +1,554 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kg verify — attestation workbench</title>
+<style>
+  :root { --bg:#14161a; --fg:#e6e6e6; --dim:#9aa0a8; --line:#2a2f37;
+          --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --acc:#60a5fa; }
+  * { box-sizing:border-box }
+  /* `grid-template-rows` IS REQUIRED, and leaving it out is why nothing scrolled.
+     With only columns declared, the single implicit row is `auto` and sizes to
+     CONTENT: measured on a 429px-tall window the row resolved to 1538px. The
+     panes are then laid out at that height, so each one has scrollHeight equal
+     to its clientHeight and believes it has nothing to scroll, while `body`
+     overflows by 1100px and `overflow:hidden` throws it away. The keyboard
+     legend sat at y=1462, off-screen, with no way to reach it.
+     `minmax(0,1fr)` pins the row to the container; `min-height:0` lets the
+     children shrink below their content so their own `overflow:auto` engages. */
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-sans-serif,system-ui,sans-serif;
+         display:grid; grid-template-columns:minmax(340px,30%) 1fr;
+         grid-template-rows:minmax(0,1fr);
+         height:100vh; height:100dvh; overflow:hidden }
+  #left { border-right:1px solid var(--line); display:flex; flex-direction:column; min-width:0; min-height:0 }
+  #head { padding:12px 14px; border-bottom:1px solid var(--line) }
+  #count { color:var(--dim); font-size:12px }
+  #fact { padding:14px; overflow:auto; flex:1; min-height:0 }
+  .k { color:var(--dim); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px }
+  .body { font-size:16px; line-height:1.45; margin-bottom:14px }
+  .why { color:var(--dim); font-size:13px; border-left:2px solid var(--line); padding-left:10px; margin-bottom:14px }
+  .src { background:#1b1f26; border:1px solid var(--line); border-radius:6px; padding:10px; margin-bottom:12px }
+  .cls { display:inline-block; font-size:11px; padding:1px 6px; border-radius:3px; background:#2a2f37; color:var(--dim) }
+  .path { font-family:ui-monospace,monospace; font-size:11px; color:var(--dim); word-break:break-all; margin-top:6px }
+  .rel { font-size:12px; color:var(--dim); margin-top:8px }
+  #hints { margin-bottom:12px }
+  .hint { display:block; width:100%; text-align:left; margin-bottom:5px; padding:6px 8px;
+          background:#1b1f26; border:1px solid var(--line); border-radius:5px; cursor:pointer; font-size:12px }
+  .hint:hover { border-color:var(--acc) }
+  .hint b { color:var(--acc) }
+  .hint span { color:var(--dim); display:block; margin-top:2px; line-height:1.35 }
+  .nohint { font-size:12px; color:var(--dim); font-style:italic }
+  #keys { padding:10px 14px; border-top:1px solid var(--line); font-size:12px; color:var(--dim) }
+
+  /* Under ~700px the two-column split stops working — measured at 573px wide the
+     document pane got 233px. Stack instead, and let the PAGE scroll: two panes
+     that each scroll internally on a short screen leaves neither usable. */
+  @media (max-width:700px) {
+    body { grid-template-columns:1fr; grid-template-rows:auto auto; height:auto; min-height:100dvh; overflow:auto }
+    #left { border-right:0; border-bottom:1px solid var(--line) }
+    #fact { overflow:visible; flex:none }
+    #right { overflow:visible; min-height:60vh }
+    #keys { position:sticky; bottom:0; background:var(--bg) }
+  }
+  #keys b { color:var(--fg); font-weight:600 }
+  #right { position:relative; overflow:auto; background:#0e1013; min-width:0; min-height:0 }
+  #pagebar { position:sticky; top:0; z-index:5; background:#0e1013e6; border-bottom:1px solid var(--line);
+             padding:6px 10px; display:flex; gap:10px; align-items:center; font-size:12px; color:var(--dim) }
+  #wrap { position:relative; display:inline-block; margin:12px }
+  #img { display:block; max-width:100%; user-select:none; -webkit-user-drag:none }
+  #box { position:absolute; border:2px solid var(--acc); background:rgba(96,165,250,.16); display:none; pointer-events:none }
+  #none { padding:40px; color:var(--dim) }
+  /* A document that is not a page image is still evidence, and 36% of the queue
+     is exactly that — .md, .docx, .txt, .eml, .csv. Read as text rather than
+     shown as a broken image. */
+  #text { margin:0; padding:14px 16px; white-space:pre-wrap; word-break:break-word;
+          font:13px/1.6 ui-monospace,monospace; color:var(--fg); max-width:78ch }
+  button { background:#222831; color:var(--fg); border:1px solid var(--line); border-radius:5px;
+           padding:3px 9px; font:inherit; font-size:12px; cursor:pointer }
+  button:hover { border-color:var(--acc) }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#1b1f26;
+           border:1px solid var(--line); border-radius:6px; padding:8px 16px; display:none; z-index:20 }
+  .prior { color:var(--warn); font-size:12px; margin-top:6px }
+  .used { display:inline-block; font-size:11px; padding:1px 6px; border-radius:3px;
+          background:#153a24; color:var(--ok); margin:2px 3px 0 0 }
+  .unused { font-size:12px; color:var(--dim); font-style:italic; margin-top:6px }
+  #filter { font-size:12px; margin-top:6px }
+  #filter a { color:var(--acc); cursor:pointer; text-decoration:underline }
+
+  /* NO ACTION MAY REQUIRE THE SOFT KEYBOARD.
+     On a phone the keyboard costs roughly half the screen, and the half it
+     takes is the page image — the thing being read to decide the verdict. So
+     the verdicts reachable without text (`attested`, `illegible`, and
+     `unsupported`, whose note is optional) are buttons in the thumb zone, and
+     the keyboard appears only inside the note sheet, which is the one place
+     text is genuinely required. */
+  #actions { display:none }
+  #more, #sheet { display:none }
+  .sheet-back { position:fixed; inset:0; background:#000a; z-index:40 }
+  .sheet { position:fixed; left:0; right:0; bottom:0; z-index:41; background:#181c22;
+           border-top:1px solid var(--line); border-radius:12px 12px 0 0;
+           padding:14px 14px calc(14px + env(safe-area-inset-bottom));
+           max-height:85dvh; overflow:auto }
+  .sheet h3 { margin:0 0 4px; font-size:15px; font-weight:600 }
+  .sheet .note { color:var(--dim); font-size:12px; margin-bottom:10px }
+  .sheet textarea { width:100%; min-height:96px; background:#0e1013; color:var(--fg);
+                    border:1px solid var(--line); border-radius:8px; padding:10px;
+                    font:inherit; font-size:16px; resize:vertical }
+  .sheet .row { display:flex; gap:8px; margin-top:12px }
+  .sheet .row button { flex:1; min-height:44px; font-size:14px; border-radius:8px }
+  .menu-item { display:block; width:100%; text-align:left; min-height:46px; font-size:14px;
+               margin-bottom:6px; border-radius:8px; padding:10px 12px }
+  .go { background:#16351f; border-color:#2c6b3f; color:#a7f3c0 }
+  .warn-btn { background:#3a2a12; border-color:#7a5a22; color:#fbd89a }
+  #markbtn.on { background:#16294a; border-color:var(--acc); color:var(--acc) }
+  #citeq { width:100%; background:#0e1013; color:var(--fg); border:1px solid var(--line);
+           border-radius:8px; padding:10px; font:inherit; font-size:16px; margin-bottom:8px }
+  #citehits { max-height:34dvh; overflow:auto; margin-bottom:8px }
+  .hit { display:block; width:100%; text-align:left; margin-bottom:4px; padding:8px 10px;
+         background:#1b1f26; border:1px solid var(--line); border-radius:6px; font-size:12px; cursor:pointer }
+  .hit:hover { border-color:var(--acc) }
+  .hit b { color:var(--acc) }
+  .hit span { display:block; color:var(--dim); margin-top:2px }
+  .picked { background:#16351f; border:1px solid #2c6b3f; border-radius:8px; padding:8px 10px; margin-bottom:6px }
+  .picked .top { display:flex; gap:8px; align-items:baseline; font-size:12px }
+  .picked .top b { color:#a7f3c0 }
+  .picked input { width:100%; margin-top:6px; background:#0e1013; color:var(--fg);
+                  border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; font-size:16px }
+
+  @media (max-width:700px) {
+    /* Thumb zone. 44px minimum touch target, and the safe-area inset so the bar
+       clears a home indicator rather than sitting under it. */
+    #actions { display:flex; gap:8px; position:fixed; left:0; right:0; bottom:0; z-index:30;
+               padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+               background:#181c22ee; backdrop-filter:blur(6px); border-top:1px solid var(--line) }
+    #actions button { flex:1; min-height:46px; font-size:14px; border-radius:9px; padding:8px 4px }
+    #actions button.nav { flex:0 0 52px }
+    /* The bar is fixed, so the last row of content would sit under it forever. */
+    body { padding-bottom:86px }
+    #keys { display:none }
+    #toast { bottom:96px }
+  }
+</style>
+
+<div id="left">
+  <div id="head">
+    <div style="font-weight:600">Attestation workbench</div>
+    <div id="count">loading…</div>
+    <div id="filter"></div>
+  </div>
+  <div id="fact"></div>
+  <div id="keys">
+    <b>a</b> attested &nbsp; <b>c</b> corrected &nbsp; <b>u</b> unsupported &nbsp; <b>i</b> illegible<br>
+    <b>j</b>/<b>k</b> next/prev &nbsp; <b>[</b>/<b>]</b> page &nbsp; <b>x</b> clear box &nbsp; drag on the page to mark the proof
+  </div>
+</div>
+
+<div id="right">
+  <div id="pagebar">
+    <button onclick="pg(-1)">◀</button><span id="pgl">—</span><button onclick="pg(1)">▶</button>
+    <button id="markbtn" onclick="toggleMark()" title="drag on the page to mark the proof">✥ mark</button>
+    <span id="docpath" style="font-family:ui-monospace,monospace"></span>
+  </div>
+  <div id="wrap"><img id="img" alt=""><div id="box"></div></div>
+  <pre id="text" style="display:none"></pre>
+  <div id="none" style="display:none"></div>
+</div>
+<div id="actions">
+  <button class="nav" onclick="step(-1)" aria-label="previous">‹</button>
+  <button class="go" onclick="rule('attested')">✓ Attested</button>
+  <button onclick="rule('illegible')">◑ Illegible</button>
+  <button class="nav" onclick="openMore()" aria-label="more">⋯</button>
+</div>
+
+<div id="more">
+  <div class="sheet-back" onclick="closeMore()"></div>
+  <div class="sheet">
+    <h3>More</h3>
+    <div class="note">The two that need typing are here — everything above works without the keyboard.</div>
+    <button class="menu-item warn-btn" onclick="closeMore();rule('corrected')">✎ Corrected…<br><span style="color:var(--dim);font-size:12px">needs the corrected text</span></button>
+    <button class="menu-item" onclick="closeMore();rule('unsupported')">✗ Unsupported…<br><span style="color:var(--dim);font-size:12px">note optional — you can skip it</span></button>
+    <button class="menu-item go" onclick="closeMore();openCite()">✚ Supported by…<br><span style="color:var(--dim);font-size:12px">attach evidence, each with its own reason</span></button>
+    <button class="menu-item" onclick="closeMore();toggleMark()">✥ Mark the proof on the page</button>
+    <button class="menu-item" onclick="closeMore();region=null;drawBox();toast('mark cleared')">⌫ Clear the mark</button>
+    <button class="menu-item" onclick="closeMore();pg(-1)">◀ Previous page</button>
+    <button class="menu-item" onclick="closeMore();pg(1)">▶ Next page</button>
+    <div class="row"><button onclick="closeMore()">Close</button></div>
+  </div>
+</div>
+
+<div id="sheet">
+  <div class="sheet-back" onclick="closeSheet()"></div>
+  <div class="sheet">
+    <h3 id="sheetTitle"></h3>
+    <div class="note" id="sheetHint"></div>
+    <textarea id="sheetText" rows="4"></textarea>
+    <div class="row">
+      <button onclick="closeSheet()">Cancel</button>
+      <button class="go" id="sheetSave" onclick="sheetSave()">Record</button>
+    </div>
+  </div>
+</div>
+
+<div id="cite">
+  <div class="sheet-back" onclick="closeCite()"></div>
+  <div class="sheet">
+    <h3>Supported by</h3>
+    <div class="note">Attach the documents that support this claim. Each edge carries its own reason — say how THIS document supports it, not what the claim means.</div>
+    <input id="citeq" placeholder="search sources: id, description or path" autocomplete="off">
+    <div id="citehits"></div>
+    <div id="citesel"></div>
+    <div class="row">
+      <button onclick="closeCite()">Cancel</button>
+      <button class="go" id="citeSave" onclick="citeSave()">Add citations</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let items = [], i = 0, page = 1, region = null;
+
+const $ = s => document.querySelector(s);
+const esc = s => (s||'').replace(/[<&>]/g, c => ({'<':'&lt;','&':'&amp;','>':'&gt;'}[c]));
+
+let onlyUsed = false;
+
+async function boot() {
+  items = await (await fetch('/api/pending' + (onlyUsed ? '?used=1' : ''))).json();
+  i = 0; render();
+  $('#filter').innerHTML = onlyUsed
+    ? 'showing only what a document relies on \u00b7 <a onclick="toggleUsed()">show all</a>'
+    : '<a onclick="toggleUsed()">show only what a document relies on</a>';
+}
+function toggleUsed() { onlyUsed = !onlyUsed; boot(); }
+
+function cur() { return items[i]; }
+
+function render() {
+  const it = cur();
+  $('#count').textContent = items.length ? `${i+1} of ${items.length} awaiting sign-off` : 'nothing pending';
+  if (!it) { $('#fact').innerHTML = '<p style="color:var(--dim)">Queue empty.</p>'; showDoc(null); return; }
+  page = (it.region && it.region.page) || it.lastPage || 1;
+  region = it.region || null;
+  $('#fact').innerHTML = `
+    <div class="k">${esc(it.factKind)}</div>
+    <div class="body">${esc(it.factBody)}</div>
+    ${it.why ? `<div class="why">${esc(it.why)}</div>` : ''}
+    ${it.usedBy && it.usedBy.length
+        ? `<div class="k">relied on by</div><div style="margin-bottom:12px">${it.usedBy.map(u=>`<span class="used">${esc(u)}</span>`).join('')}</div>`
+        : `<div class="unused">No document renders this fact — optional until one does.</div>`}
+    <div class="k">cited to</div>
+    <div class="src">
+      <div>${esc(it.srcBody)} ${it.class ? `<span class="cls">${esc(it.class)}</span>` : ''}</div>
+      ${it.doc ? `<div class="path">${esc(it.doc)}</div>` : '<div class="path" style="color:var(--bad)">no document — this source cites nothing we hold</div>'}
+      ${it.prior ? `<div class="prior">prior: ${esc(it.prior)}${it.priorBy ? ' by '+esc(it.priorBy) : ''} — machine reading, needs a person</div>` : ''}
+      ${it.related && it.related.length ? `<div class="rel">${it.related.length} other fact(s) rest on this source</div>` : ''}
+    </div>
+    <div class="k">where in the document</div>
+    <div id="hints"><span class="nohint">looking…</span></div>
+    <div class="k">ids</div>
+    <div class="path">${esc(it.fact)} → ${esc(it.source)}</div>`;
+  showDoc(it);
+  loadHints(it);
+}
+
+// Hints are a ranked GUESS from whatever machine-readable text exists. Labelled
+// as such, and never applied on their own — a person still rules.
+async function loadHints(it) {
+  const el = $('#hints'); if (!el) return;
+  if (!it.held) { el.innerHTML = '<span class="nohint">no document held</span>'; return; }
+  if (it.lastPage) {
+    el.innerHTML = `<span class="nohint">opened at page ${it.lastPage} — where you last marked something in this document</span>`;
+  }
+  const seq = ++loadHints._seq;
+  let hs = [];
+  try {
+    hs = await (await fetch(`/api/hints?doc=${encodeURIComponent(it.doc)}&fact=${encodeURIComponent(it.factBody)}`)).json();
+  } catch (e) { hs = []; }
+  if (seq !== loadHints._seq) return;           // a later item won the race
+  if (!hs || !hs.length) {
+    el.innerHTML = '<span class="nohint">no searchable text for this document — it is a scan with no OCR sidecar, so page by hand</span>';
+    return;
+  }
+  el.innerHTML = hs.map(h =>
+    `<button class="hint" onclick="jump(${h.page})"><b>page ${h.page}</b>${h.snippet ? `<span>…${esc(h.snippet)}…</span>` : ''}</button>`).join('');
+  jump(hs[0].page);                              // land on the best guess
+}
+loadHints._seq = 0;
+
+function jump(p) { page = p; showDoc(cur()); }
+
+function showDoc(it) {
+  const wrap = $('#wrap'), txt = $('#text'), none = $('#none');
+  const hide = () => { wrap.style.display='none'; txt.style.display='none'; none.style.display='none'; };
+  if (!it || !it.held) {
+    hide(); none.style.display = 'block';
+    none.textContent = it ? 'No document held for this source. `unsupported` is the honest verdict if nothing supports the fact.' : '';
+    $('#pgl').textContent = '—'; $('#docpath').textContent = '';
+    return;
+  }
+  $('#docpath').textContent = it.doc;
+  // The server decides which of these a document is — see VerifyItem.Kind. The
+  // page must not re-derive it from the extension, or the two disagree about
+  // what a .docx is and one of them puts a zip container into an <img>.
+  if (it.kind === 'pdf' || it.kind === 'image') {
+    hide(); wrap.style.display = 'inline-block';
+    $('#img').src = `/api/doc?doc=${encodeURIComponent(it.doc)}&page=${page}`;
+    $('#pgl').textContent = it.kind === 'pdf' ? `page ${page} / ${it.pages||1}` : 'image';
+    drawBox();
+    return;
+  }
+  hide(); txt.style.display = 'block';
+  $('#pgl').textContent = 'text';
+  showText(it);
+}
+
+// Read as text. `/api/doc` returns 204 when nothing could be extracted, which is
+// a different answer from an empty document and says so.
+async function showText(it) {
+  const seq = ++showText._seq;
+  const txt = $('#text');
+  txt.textContent = 'reading…';
+  try {
+    const res = await fetch(`/api/doc?doc=${encodeURIComponent(it.doc)}`);
+    if (seq !== showText._seq) return;
+    if (res.status === 204) {
+      txt.textContent = 'No readable text in this document. It is held, but nothing has extracted it — run `raglit index` on it.';
+      return;
+    }
+    txt.textContent = await res.text();
+  } catch (e) {
+    if (seq === showText._seq) txt.textContent = 'could not read this document: ' + e;
+  }
+}
+showText._seq = 0;
+
+function drawBox() {
+  const b = $('#box'), img = $('#img');
+  if (!region || !region.w || (region.page||1) !== page) { b.style.display='none'; return; }
+  b.style.display = 'block';
+  b.style.left = (region.x*img.clientWidth)+'px';
+  b.style.top = (region.y*img.clientHeight)+'px';
+  b.style.width = (region.w*img.clientWidth)+'px';
+  b.style.height = (region.h*img.clientHeight)+'px';
+}
+$('#img').addEventListener('load', drawBox);
+$('#citeq').addEventListener('input', e => citeSearch(e.target.value));
+
+// drag to mark the proof — stored in page fractions, so re-rendering at another
+// dpi later does not move the box.
+//
+// POINTER EVENTS, not mouse: `mousedown` never fires for a finger, so marking
+// the proof — the record of WHERE on the page the claim was found — simply did
+// not exist on a touchscreen.
+//
+// A finger drag is also how you scroll, and the two cannot both own it. Mouse
+// keeps drag-to-mark unconditionally, because a mouse has a scroll wheel and
+// nothing is ambiguous. Touch marks only in MARK MODE, so the default gesture
+// on a phone stays scrolling the page you are trying to read.
+let dragging = false, sx = 0, sy = 0, markMode = false;
+
+function toggleMark() {
+  markMode = !markMode;
+  $('#markbtn').classList.toggle('on', markMode);
+  // `touch-action:none` is what actually stops the browser panning mid-drag;
+  // preventDefault alone is too late once scrolling has been handed to the
+  // compositor.
+  $('#img').style.touchAction = markMode ? 'none' : '';
+  toast(markMode ? 'mark mode — drag on the page' : 'mark mode off');
+}
+
+function ptFrac(e) {
+  const r = $('#img').getBoundingClientRect();
+  return [Math.max(0, Math.min(e.clientX - r.left, r.width)),
+          Math.max(0, Math.min(e.clientY - r.top, r.height)), r];
+}
+$('#img').addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' && !markMode) return;   // a finger scrolls unless marking
+  // A document that did not render has width 0, and every fraction below would
+  // divide by it — producing a NaN region that serialises to null and pins the
+  // verdict to nowhere. Refuse to start rather than record that.
+  if (!$('#img').clientWidth || !$('#img').clientHeight) { toast('no page image to mark'); return; }
+  const [x, y] = ptFrac(e);
+  dragging = true; sx = x; sy = y;
+  // Capture, so a drag that leaves the image still tracks and still ends.
+  try { e.target.setPointerCapture(e.pointerId); } catch (_) {}
+  e.preventDefault();
+});
+$('#img').addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const [cx, cy, r] = ptFrac(e);
+  region = { page, x: Math.min(sx,cx)/r.width, y: Math.min(sy,cy)/r.height,
+             w: Math.abs(cx-sx)/r.width, h: Math.abs(cy-sy)/r.height };
+  drawBox();
+  e.preventDefault();
+});
+const endDrag = e => {
+  if (!dragging) return;
+  dragging = false;
+  try { e.target.releasePointerCapture(e.pointerId); } catch (_) {}
+};
+$('#img').addEventListener('pointerup', endDrag);
+$('#img').addEventListener('pointercancel', endDrag);
+
+// `prompt()` is gone. It is a blocking modal a mobile browser may suppress
+// outright, and it gives no control over what the keyboard covers — on a phone
+// it hid the page image the note was being written ABOUT.
+function rule(verdict) {
+  if (!cur()) return;
+  if (verdict === 'corrected' || verdict === 'unsupported') { openSheet(verdict); return; }
+  send(verdict, '');
+}
+
+let sheetVerdict = null;
+function openSheet(verdict) {
+  sheetVerdict = verdict;
+  const corrected = verdict === 'corrected';
+  $('#sheetTitle').textContent = corrected
+    ? 'What does the document actually say?'
+    : 'Why does the document not support this?';
+  $('#sheetHint').textContent = corrected
+    ? 'Required — a correction with no correction is nothing.'
+    : 'Optional. Record it without a note if the absence speaks for itself.';
+  $('#sheetSave').textContent = corrected ? 'Record correction' : 'Record unsupported';
+  $('#sheetText').value = '';
+  $('#sheet').style.display = 'block';
+  // The one place the keyboard is meant to appear. `max-height:85dvh` on the
+  // sheet is what keeps the textarea above it: `dvh` tracks the keyboard, `vh`
+  // does not.
+  setTimeout(() => $('#sheetText').focus(), 30);
+}
+function closeSheet() { $('#sheet').style.display = 'none'; sheetVerdict = null; }
+function sheetSave() {
+  const note = $('#sheetText').value;
+  if (sheetVerdict === 'corrected' && !note.trim()) { toast('a correction needs the corrected text'); return; }
+  const v = sheetVerdict; closeSheet(); send(v, note);
+}
+// SUPPORTED BY — attach evidence, each edge carrying its own reason.
+//
+// Not a fifth verdict. The four rule on a citation that already exists; none of
+// them can say what the record actually holds, so knowing that a document
+// supports a fact had nowhere to go but a note, where it stops being an edge.
+let citePicked = [];
+
+function openCite() {
+  if (!cur()) return;
+  citePicked = [];
+  $('#citeq').value = '';
+  $('#citehits').innerHTML = '';
+  citeSearch._hits = [];
+  renderPicked();
+  $('#cite').style.display = 'block';
+  citeSearch('');
+}
+function closeCite() { $('#cite').style.display = 'none'; citePicked = []; }
+
+async function citeSearch(q) {
+  const seq = ++citeSearch._seq;
+  let hits = [];
+  try { hits = await (await fetch('/api/sources?q=' + encodeURIComponent(q))).json(); }
+  catch (e) { hits = []; }
+  if (seq !== citeSearch._seq) return;   // a later keystroke won
+  citeSearch._hits = hits || [];
+  renderHits();
+}
+citeSearch._seq = 0;
+citeSearch._hits = [];
+
+// Drawn from the LAST RESULTS, not from a new request. The handler rebuilds the
+// project per request — measured at ~1s on a live corpus — so refetching just to
+// remove the row you tapped left it sitting there for a second, looking unpicked.
+function renderHits() {
+  const it = cur(), el = $('#citehits');
+  const hits = citeSearch._hits.filter(h =>
+    h.id !== (it && it.source) && !citePicked.some(p => p.id === h.id));
+  if (!hits.length) { el.innerHTML = '<span class="nohint">no source matches</span>'; return; }
+  el.innerHTML = hits.map(h =>
+    `<button class="hit" onclick="pick('${h.id.replace(/'/g, "\\'")}')"><b>${esc(h.id)}</b>${h.class ? ` <span class="cls">${esc(h.class)}</span>` : ''}<span>${esc((h.body||'').slice(0,110))}</span></button>`).join('');
+}
+
+function pick(id) {
+  if (!citePicked.some(p => p.id === id)) citePicked.push({ id, because: '' });
+  renderPicked(); renderHits();
+}
+function unpick(id) { citePicked = citePicked.filter(p => p.id !== id); renderPicked(); renderHits(); }
+function setBecause(id, v) { const p = citePicked.find(p => p.id === id); if (p) p.because = v; }
+
+function renderPicked() {
+  $('#citesel').innerHTML = citePicked.map(p => `
+    <div class="picked">
+      <div class="top"><b>${esc(p.id)}</b>
+        <button style="margin-left:auto" onclick="unpick('${p.id.replace(/'/g, "\\'")}')">remove</button></div>
+      <input placeholder="because… how THIS document supports the claim"
+             value="${esc(p.because)}"
+             oninput="setBecause('${p.id.replace(/'/g, "\\'")}', this.value)">
+    </div>`).join('');
+  $('#citeSave').textContent = citePicked.length
+    ? `Add ${citePicked.length} citation${citePicked.length > 1 ? 's' : ''}` : 'Add citations';
+}
+
+async function citeSave() {
+  const it = cur(); if (!it || !citePicked.length) { toast('pick a source first'); return; }
+  const res = await fetch('/api/cite', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ fact: it.fact, add: citePicked })});
+  if (!res.ok) { toast('failed: ' + await res.text()); return; }
+  const out = await res.json();
+  closeCite();
+  toast((out.added||[]).length ? `cited ${out.added.length} — each now awaits its own ruling` : 'already cited');
+  boot();   // the new pairs join the queue
+}
+
+function openMore() { $('#more').style.display = 'block'; }
+function closeMore() { $('#more').style.display = 'none'; }
+function step(d) {
+  const n = i + d;
+  if (n < 0 || n >= items.length) return;
+  i = n; region = null; render();
+}
+
+async function send(verdict, note) {
+  const it = cur(); if (!it) return;
+  const body = { fact: it.fact, source: it.source, verdict, note,
+                 region: (region && region.w) ? region : undefined };
+  const res = await fetch('/api/attest', {method:'POST', headers:{'Content-Type':'application/json'},
+                                          body: JSON.stringify(body)});
+  if (!res.ok) { toast('failed: ' + await res.text()); return; }
+  toast(verdict + ' recorded');
+  items.splice(i, 1); if (i >= items.length) i = Math.max(0, items.length-1);
+  region = null; render();
+}
+
+function toast(m) {
+  const t = $('#toast'); t.textContent = m; t.style.display='block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display='none', 1600);
+}
+function pg(d) {
+  const it = cur(); if (!it || !it.held) return;
+  page = Math.max(1, Math.min(page + d, it.pages||1)); showDoc(it);
+}
+
+addEventListener('keydown', e => {
+  // TEXTAREA too. The note sheet is a textarea, and without it every letter
+  // typed into a correction also fired a verdict on the item behind it.
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.metaKey || e.ctrlKey) {
+    if (e.key === 'Escape') { closeSheet(); closeCite(); }
+    return;
+  }
+  if (e.key === 'Escape') { closeSheet(); closeMore(); closeCite(); return; }
+  const k = e.key.toLowerCase();
+  if (k === 'a') rule('attested');
+  else if (k === 'c') rule('corrected');
+  else if (k === 'u') rule('unsupported');
+  else if (k === 'i') rule('illegible');
+  else if (k === 'j') step(1);
+  else if (k === 'k') step(-1);
+  else if (k === '[') pg(-1);
+  else if (k === ']') pg(1);
+  else if (k === 'x') { region = null; drawBox(); }
+  else if (k === 'm') toggleMark();
+  else return;
+  e.preventDefault();
+});
+
+boot();
+</script>

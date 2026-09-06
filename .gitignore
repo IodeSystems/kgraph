@@ -1,0 +1,5 @@
+dist/
+.claude/worktrees/
+# Built binary at the repo root. ANCHORED: a bare `kg` also matches the cmd/kg
+# DIRECTORY, which silently excluded the CLI from a commit.
+/kg

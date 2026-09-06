@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Everything that must be true before a change is done.
+#
+# `go vet` is not enough and this repo has the receipts: a retirement pass left
+# eleven dead functions, vars and consts behind — including a whole citation
+# machinery in conflict.go and a test helper whose only caller had been deleted —
+# and vet reported none of them. Dead code that LOOKS alive is this codebase's
+# characteristic bug: a parameter nothing read, a map nothing read, a ranking
+# band that could never fire.
+#
+# staticcheck catches unused funcs, vars, consts and fields. It does NOT catch an
+# unused PARAMETER — `Backlog(root, index, g, specs)` carried a dead one for
+# weeks — which is what unparam is for, and why it runs too when available.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "── gofmt"
+unformatted=$(gofmt -l . || true)
+if [ -n "$unformatted" ]; then
+  echo "$unformatted" >&2
+  echo "not gofmt'd" >&2
+  exit 1
+fi
+
+echo "── go vet"
+go vet ./...
+
+if command -v staticcheck >/dev/null 2>&1; then
+  echo "── staticcheck"
+  staticcheck ./...
+else
+  echo "── staticcheck: not installed (go install honnef.co/go/tools/cmd/staticcheck@latest)" >&2
+fi
+
+if command -v unparam >/dev/null 2>&1; then
+  echo "── unparam"
+  unparam ./... || true   # advisory: an unused parameter is sometimes an interface
+else
+  echo "── unparam: not installed (go install mvdan.cc/unparam@latest)" >&2
+fi
+
+echo "── go test"
+go test ./...
+echo "ok"

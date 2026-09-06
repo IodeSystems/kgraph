@@ -1,0 +1,9 @@
+# Modules still overridden by a local `replace` in go.mod, with the reason.
+# The pre-push guard permits exactly these; everything else must live in
+# go.work. Delete a line once the module is consumable by version — the point
+# of this file is that the debt is countable.
+
+# kgraph asks raglit for its copy/version rulings over raglit's client package,
+# rather than parsing raglit's storage (which broke once already, silently).
+# Required at v0.0.0: raglit has no publishable release yet.
+github.com/iodesystems/raglit

@@ -1,0 +1,15 @@
+// A corpus built to TRIGGER EVERY CHECK, so reachability is provable.
+{"op":"assert","id":"s-deed","fields":{"document":"The 1993 deed","doc":"documents/deed.md","class":"document"},"by":"carl","at":"2026-01-01"}
+{"op":"assert","id":"s-spare","fields":{"document":"A statute nothing cites yet","doc":"documents/spare-statute.md","class":"authority"},"by":"carl","at":"2026-01-02"}
+{"op":"assert","id":"s-survey-north","fields":{"document":"The 2008 boundary survey of lot seven north","doc":"documents/survey-a.md","class":"record"},"by":"carl","at":"2026-01-03"}
+{"op":"assert","id":"s-survey-south","fields":{"document":"The 2008 boundary survey of lot seven south","doc":"documents/survey-b.md","class":"record"},"by":"carl","at":"2026-01-04"}
+{"op":"assert","id":"c-gate-open","fields":{"claim":"The gate was open","status":"asserted","attested_by":"s-deed","contradicts":"c-gate-locked"},"by":"carl","at":"2026-01-05"}
+{"op":"assert","id":"c-gate-locked","fields":{"claim":"The gate was locked","status":"asserted","attested_by":"s-survey-north"},"by":"carl","at":"2026-01-06"}
+{"op":"assert","id":"c-width","fields":{"claim":"The strip is sixteen feet wide","status":"asserted","attested_by":"s-survey-south"},"by":"carl","at":"2026-01-07"}
+{"op": "assert", "id": "s-wordy", "fields": {"document": "A very long description that argues rather than names, running well past the two hundred and forty character limit the scan warns at, because a description prints into the reference block of every document that cites it and anything past naming the instrument belongs in reason: where no reader sees it at all.", "doc": "documents/deed.md", "class": "document"}, "by": "carl", "at": "2026-02-01T00:00:00Z"}
+{"op": "assert", "id": "s-interested-anon", "fields": {"utterance": "An account serving its teller", "doc": "documents/survey-a.md", "class": "interested"}, "by": "carl", "at": "2026-02-02T00:00:00Z"}
+{"op": "assert", "id": "i-bare", "fields": {"inference": "A conclusion with no premises declared", "class": "inference"}, "by": "carl", "at": "2026-02-03T00:00:00Z"}
+{"op": "assert", "id": "c-rests-on-inference", "fields": {"claim": "Rests on the bare inference", "status": "asserted", "attested_by": "i-bare"}, "by": "carl", "at": "2026-02-04T00:00:00Z"}
+{"op": "assert", "id": "q-pull-af-201503110047", "fields": {"question": "Obtain AF 201503110047 from the recorder", "status": "open", "needs": "evidence"}, "by": "carl", "at": "2026-02-05T00:00:00Z"}
+{"op": "assert", "id": "s-held-af", "fields": {"record": "The recorded plat AF 201503110047", "doc": "documents/af-201503110047-plat.md", "class": "record"}, "by": "carl", "at": "2026-02-06T00:00:00Z"}
+{"op": "assert", "id": "c-uses-held", "fields": {"claim": "The plat shows the strip", "status": "asserted", "attested_by": "s-held-af"}, "by": "carl", "at": "2026-02-07T00:00:00Z"}

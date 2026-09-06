@@ -1,0 +1,608 @@
+# kgraph standing queries — what was asked, and the answer on record.
+# A diff here is a question to re-ask, not a merge conflict.
+- name: evidence.admissions
+  group: evidence
+  query: source[class=admission] sort id
+  query_hash: sha256:62f66b12a30e94ea
+  pin:
+    set_hash: sha256:dd1403ff5e970d75
+    count: 2
+    sort:
+        - id
+    nodes:
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-quill-letter@40ddf5ea2d05e206
+    cites:
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-quill-letter@40ddf5ea2d05e206
+  at: "2026-09-01"
+  by: carl
+- name: evidence.inferences
+  group: evidence
+  query: source[class=inference] sort id
+  query_hash: sha256:0d48943306443706
+  pin:
+    set_hash: sha256:83928fdff49447ae
+    count: 5
+    sort:
+        - id
+    nodes:
+        - i-implied@7b46c691fe08bbbf
+        - i-landlock@7665ba2b6cb26710
+        - i-substitution-window@62f3d9090232f717
+        - i-vole-conflicted@8e5c22c7210f22ba
+        - i-words-control@3fe984aed5ad616c
+    cites:
+        - i-implied@7b46c691fe08bbbf
+        - i-landlock@7665ba2b6cb26710
+        - i-substitution-window@62f3d9090232f717
+        - i-vole-conflicted@8e5c22c7210f22ba
+        - i-words-control@3fe984aed5ad616c
+  at: "2026-09-01"
+  by: carl
+- name: evidence.proof-set
+  group: evidence
+  query: 'claim -member_of-> #g-implied-easement-proof sort id'
+  query_hash: sha256:cab29bae591b1671
+  pin:
+    set_hash: sha256:df23d257ccfab67a
+    count: 4
+    sort:
+        - id
+    nodes:
+        - lot-8-landlocked@efdbac2840394ecb
+        - shared-use-conceded@1c903d46e0a2c286
+        - strip-serves-both@e9207503a7526e34
+        - strip-used-by-both@4169e68fc1815e1f
+    cites:
+        - i-landlock@7665ba2b6cb26710
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-quill-letter@40ddf5ea2d05e206
+  at: "2026-09-01"
+  by: carl
+- name: evidence.records
+  group: evidence
+  query: source[class=record] sort id
+  query_hash: sha256:b090d01811cad62e
+  pin:
+    set_hash: sha256:5f59060feda93d8a
+    count: 10
+    sort:
+        - id
+    nodes:
+        - s-assessor@a70002ec83d5d281
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-deed-2024@a4f8ee8fa231e02a
+        - s-docket@f71a6c4396c61d03
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2023@91f8f71ae380df11
+        - s-vole-2026@722b29466f238246
+    cites:
+        - s-assessor@a70002ec83d5d281
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-deed-2024@a4f8ee8fa231e02a
+        - s-docket@f71a6c4396c61d03
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2023@91f8f71ae380df11
+        - s-vole-2026@722b29466f238246
+  at: "2026-09-01"
+  by: carl
+- name: held
+  query: claim[status=asserted]
+  query_hash: sha256:ec149780467131b3
+  pin:
+    set_hash: sha256:613cb3d7a8d78a61
+    count: 29
+    sort:
+        - id
+    nodes:
+        - access-width-required@62edc517db3060db
+        - bramble-is-shared@43981d66de3bdb45
+        - deed-omits-the-strip@21e39938256961b7
+        - drawing-conflicts-with-words@f75c540418b5ec3b
+        - exclusive-use-claimed@abb500d8f1f6f0af
+        - fence-line-follows-old-posts@21c9b33a668f0f56
+        - fence-predates-sale@31776637ef51471f
+        - gate-was-locked@b48b1545ead98228
+        - gate-was-open@f70923d796b8717d
+        - implied-easement@dd3c75d4d5e8cbea
+        - lot-8-landlocked@efdbac2840394ecb
+        - mediation-in-june@e73fd157190000dc
+        - permit-against-parent@fbb1b733f612966a
+        - plead-shared-use@0b9c166f40226c07
+        - quiet-title-on-deeds@969775668ae92c39
+        - quill-said-2024@8464b5df249e3143
+        - reformation@269476bc4aa311b2
+        - shared-use-conceded@1c903d46e0a2c286
+        - strip-never-conveyed@f48d29ae5d134205
+        - strip-serves-both@e9207503a7526e34
+        - strip-used-by-both@4169e68fc1815e1f
+        - strip-width-is-16ft@3df495d2c984c466
+        - strip-width-is-20ft@af632eb693eadb9e
+        - survey-2023-omits-strip@60d7b0a8006b5c26
+        - survey-2026-shows-strip@b69d1783084ec7df
+        - vole-both-sides@10b98ba28d8bb586
+        - vole-not-our-witness@2e76fe5328c9f936
+        - vole-phone@12f2fb26bac69423
+        - words-control@40708c6ace61ede2
+    unresolved:
+        - q-geometry-proof
+    cites:
+        - i-implied@7b46c691fe08bbbf
+        - i-landlock@7665ba2b6cb26710
+        - i-vole-conflicted@8e5c22c7210f22ba
+        - i-words-control@3fe984aed5ad616c
+        - s-bramble-account@6c66b9e7f6036992
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-deed-2024@a4f8ee8fa231e02a
+        - s-docket@f71a6c4396c61d03
+        - s-neighbour-hearsay@032eecd077b0676a
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-quill-letter@40ddf5ea2d05e206
+        - s-roster@57c34ad4e0fb2847
+        - s-rule-14-18@fc5accefae86c4d4
+        - s-strategy@4f1c1da0e96fd503
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2023@91f8f71ae380df11
+        - s-vole-2026@722b29466f238246
+  at: "2026-08-30"
+  by: carl
+- name: impeachment.admissions
+  group: impeachment
+  query: source[class=admission] sort id
+  query_hash: sha256:62f66b12a30e94ea
+  pin:
+    set_hash: sha256:dd1403ff5e970d75
+    count: 2
+    sort:
+        - id
+    nodes:
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-quill-letter@40ddf5ea2d05e206
+    cites:
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-quill-letter@40ddf5ea2d05e206
+  at: "2026-09-01"
+  by: carl
+- name: impeachment.conflicts
+  group: impeachment
+  query: 'claim -member_of-> #g-impeachment sort id'
+  query_hash: sha256:34467c41a876c18b
+  pin:
+    set_hash: sha256:4bcceb537c74730c
+    count: 2
+    sort:
+        - id
+    nodes:
+        - exclusive-use-claimed@abb500d8f1f6f0af
+        - quill-said-2024@8464b5df249e3143
+    cites:
+        - s-complaint@bbabd5e263752880
+        - s-quill-depo@5f8f90d779cde0f3
+  at: "2026-09-01"
+  by: carl
+- name: impeachment.disputed
+  group: impeachment
+  query: claim[disputed] sort id
+  query_hash: sha256:78dd86ebd25eaa88
+  pin:
+    set_hash: sha256:5639845bd01a2c1a
+    count: 5
+    sort:
+        - id
+    nodes:
+        - exclusive-use-claimed@abb500d8f1f6f0af
+        - fence-predates-sale@31776637ef51471f
+        - gate-was-open@f70923d796b8717d
+        - quill-said-2024@8464b5df249e3143
+        - strip-width-is-20ft@af632eb693eadb9e
+    cites:
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-neighbour-hearsay@032eecd077b0676a
+        - s-quill-depo@5f8f90d779cde0f3
+  at: "2026-09-01"
+  by: carl
+- name: next-steps.blocked
+  group: next-steps
+  query: action -requires-> action sort id
+  query_hash: sha256:f113c5a60a08f925
+  pin:
+    set_hash: sha256:f9e26e80eba63641
+    count: 1
+    sort:
+        - id
+    nodes:
+        - a-amend-answer@6be3948b15cca285
+    unresolved:
+        - q-geometry-proof
+    cites:
+        - s-strategy@4f1c1da0e96fd503
+  at: "2026-09-01"
+  by: carl
+- name: next-steps.ordered
+  group: next-steps
+  query: 'action -member_of-> #g-before-mediation sort id'
+  query_hash: sha256:7ee3e0c7f9935c4a
+  pin:
+    set_hash: sha256:7b888892951069cb
+    count: 3
+    sort:
+        - id
+    nodes:
+        - a-conflict-check@2fe438c3f4466b2e
+        - a-pull-plat@e806242ef8dae49e
+        - a-retain-surveyor@3075bb7df328096c
+    cites:
+        - s-strategy@4f1c1da0e96fd503
+  at: "2026-09-01"
+  by: carl
+- name: next-steps.owners
+  group: next-steps
+  query: action[status=asserted] sort id
+  query_hash: sha256:f4c8cb765e317034
+  pin:
+    set_hash: sha256:ef55cf66e00dc7a2
+    count: 5
+    sort:
+        - id
+    nodes:
+        - a-amend-answer@6be3948b15cca285
+        - a-conflict-check@2fe438c3f4466b2e
+        - a-draft-easement@2fc00458d4743f2a
+        - a-pull-plat@e806242ef8dae49e
+        - a-retain-surveyor@3075bb7df328096c
+    unresolved:
+        - q-geometry-proof
+    cites:
+        - s-strategy@4f1c1da0e96fd503
+  at: "2026-09-01"
+  by: carl
+- name: next-steps.ready
+  group: next-steps
+  query: 'action -member_of-> #g-ready-to-amend sort id'
+  query_hash: sha256:9c74bfb7ec92d99b
+  pin:
+    set_hash: sha256:5b198245bac69dd4
+    count: 2
+    sort:
+        - id
+    nodes:
+        - a-conflict-check@2fe438c3f4466b2e
+        - a-pull-plat@e806242ef8dae49e
+    cites:
+        - s-strategy@4f1c1da0e96fd503
+  at: "2026-09-01"
+  by: carl
+- name: parties.notes
+  group: parties
+  query: claim -about-> entity sort id
+  query_hash: sha256:66a9cc7db09a6a44
+  pin:
+    set_hash: sha256:df29e9be9406be8e
+    count: 18
+    sort:
+        - id
+    nodes:
+        - bramble-is-shared@43981d66de3bdb45
+        - drawing-conflicts-with-words@f75c540418b5ec3b
+        - fence-predates-sale@31776637ef51471f
+        - gate-was-locked@b48b1545ead98228
+        - gate-was-open@f70923d796b8717d
+        - lot-8-landlocked@efdbac2840394ecb
+        - permit-against-parent@fbb1b733f612966a
+        - quill-said-2024@8464b5df249e3143
+        - strip-never-conveyed@f48d29ae5d134205
+        - strip-serves-both@e9207503a7526e34
+        - strip-used-by-both@4169e68fc1815e1f
+        - strip-width-is-16ft@3df495d2c984c466
+        - strip-width-is-20ft@af632eb693eadb9e
+        - survey-2023-omits-strip@60d7b0a8006b5c26
+        - survey-2026-shows-strip@b69d1783084ec7df
+        - vole-both-sides@10b98ba28d8bb586
+        - vole-not-our-witness@2e76fe5328c9f936
+        - vole-phone@12f2fb26bac69423
+    cites:
+        - i-landlock@7665ba2b6cb26710
+        - i-vole-conflicted@8e5c22c7210f22ba
+        - s-bramble-account@6c66b9e7f6036992
+        - s-county-clerk@61d32f68f0d68a69
+        - s-neighbour-hearsay@032eecd077b0676a
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-roster@57c34ad4e0fb2847
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2023@91f8f71ae380df11
+        - s-vole-2026@722b29466f238246
+  at: "2026-09-01"
+  by: carl
+- name: parties.people
+  group: parties
+  query: entity sort id
+  query_hash: sha256:4996d5b84420b1c0
+  pin:
+    set_hash: sha256:aa0c520c76aa0278
+    count: 14
+    sort:
+        - id
+    nodes:
+        - dace@0b53c416254fbd9d
+        - ferris-oak@2b1be5c035d7c130
+        - holt-pike@fa3fba620d89a2c3
+        - lot-7@4dec3f33d4ed232a
+        - lot-8@a02c69726f79edac
+        - larkspur-llp@0c450b4ae0d65bc9
+        - nettle@ded2ae0455c3e29e
+        - parent-parcel@6d005c2a1e8a7ad5
+        - quill@909a2c3d46c244c4
+        - sam-bramble@5ed423e0f943e57c
+        - the-matter@bbd1e99cffba28b2
+        - the-strip@2513a4cd51845b93
+        - vole@35f5449a8f14b786
+        - wren-bramble@a205a751f60f1694
+    cites:
+        - s-assessor@a70002ec83d5d281
+        - s-complaint@bbabd5e263752880
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-roster@57c34ad4e0fb2847
+        - s-strategy@4f1c1da0e96fd503
+        - s-survey-decl@af6567fdf78695e3
+  at: "2026-09-01"
+  by: carl
+- name: parties.records
+  group: parties
+  query: source[class=record] sort id
+  query_hash: sha256:b090d01811cad62e
+  pin:
+    set_hash: sha256:5f59060feda93d8a
+    count: 10
+    sort:
+        - id
+    nodes:
+        - s-assessor@a70002ec83d5d281
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-deed-2024@a4f8ee8fa231e02a
+        - s-docket@f71a6c4396c61d03
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2023@91f8f71ae380df11
+        - s-vole-2026@722b29466f238246
+    cites:
+        - s-assessor@a70002ec83d5d281
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-deed-2024@a4f8ee8fa231e02a
+        - s-docket@f71a6c4396c61d03
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2023@91f8f71ae380df11
+        - s-vole-2026@722b29466f238246
+  at: "2026-09-01"
+  by: carl
+- name: theory.disputed
+  group: theory
+  query: claim[disputed] sort id
+  query_hash: sha256:78dd86ebd25eaa88
+  pin:
+    set_hash: sha256:5639845bd01a2c1a
+    count: 5
+    sort:
+        - id
+    nodes:
+        - exclusive-use-claimed@abb500d8f1f6f0af
+        - fence-predates-sale@31776637ef51471f
+        - gate-was-open@f70923d796b8717d
+        - quill-said-2024@8464b5df249e3143
+        - strip-width-is-20ft@af632eb693eadb9e
+    cites:
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-neighbour-hearsay@032eecd077b0676a
+        - s-quill-depo@5f8f90d779cde0f3
+  at: "2026-09-01"
+  by: carl
+- name: theory.open
+  group: theory
+  query: question[status=open] sort id
+  query_hash: sha256:e43806389f861692
+  pin:
+    set_hash: sha256:59c787d471a29265
+    count: 8
+    sort:
+        - id
+    nodes:
+        - q-geometry-proof@d64547a9e6429f9d
+        - q-nettle-reply@2c3b6cade5c3bd0b
+        - q-photo-dates@8565388ac0cd3e9e
+        - q-plat-original@b0f32add6f7ec151
+        - q-post-hole-dating@db5238c81d479355
+        - q-settle-or-try@94e5b969296ac934
+        - q-strip-chain@f840a1659e569c6b
+        - q-vole-declaration-substance@31c5702d9e56b8dc
+    unresolved:
+        - q-geometry-proof
+        - q-nettle-reply
+        - q-photo-dates
+        - q-plat-original
+        - q-post-hole-dating
+        - q-settle-or-try
+        - q-strip-chain
+        - q-vole-declaration-substance
+    cites:
+        - s-county-clerk@61d32f68f0d68a69
+        - s-photos@704be190568a18f7
+        - s-strategy@4f1c1da0e96fd503
+        - s-vole-2026@722b29466f238246
+  at: "2026-09-01"
+  by: carl
+- name: theory.path-one
+  group: theory
+  query: 'claim -supports-> #quiet-title-on-deeds sort id'
+  query_hash: sha256:66ac8d42d68f0a6b
+  pin:
+    set_hash: sha256:a272b365bb7bc189
+    count: 1
+    sort:
+        - id
+    nodes:
+        - deed-omits-the-strip@21e39938256961b7
+    cites:
+        - s-deed-2024@a4f8ee8fa231e02a
+  at: "2026-09-01"
+  by: carl
+- name: theory.path-two
+  group: theory
+  query: 'claim -member_of-> #g-reformation-proof sort id'
+  query_hash: sha256:035bad1ca323e2ec
+  pin:
+    set_hash: sha256:fe28c3eb06049d6b
+    count: 2
+    sort:
+        - id
+    nodes:
+        - drawing-conflicts-with-words@f75c540418b5ec3b
+        - words-control@40708c6ace61ede2
+    cites:
+        - i-words-control@3fe984aed5ad616c
+        - s-vole-2026@722b29466f238246
+  at: "2026-09-01"
+  by: carl
+- name: theory.settled
+  group: theory
+  query: claim[status=asserted] @now sort id
+  query_hash: sha256:3fb356ecce9c4033
+  pin:
+    set_hash: sha256:52f216ca64a92122
+    count: 27
+    sort:
+        - id
+    nodes:
+        - access-width-required@62edc517db3060db
+        - bramble-is-shared@43981d66de3bdb45
+        - deed-omits-the-strip@21e39938256961b7
+        - drawing-conflicts-with-words@f75c540418b5ec3b
+        - exclusive-use-claimed@abb500d8f1f6f0af
+        - fence-line-follows-old-posts@21c9b33a668f0f56
+        - fence-predates-sale@31776637ef51471f
+        - gate-was-locked@b48b1545ead98228
+        - gate-was-open@f70923d796b8717d
+        - implied-easement@dd3c75d4d5e8cbea
+        - lot-8-landlocked@efdbac2840394ecb
+        - mediation-in-june@e73fd157190000dc
+        - permit-against-parent@fbb1b733f612966a
+        - plead-shared-use@0b9c166f40226c07
+        - quiet-title-on-deeds@969775668ae92c39
+        - quill-said-2024@8464b5df249e3143
+        - shared-use-conceded@1c903d46e0a2c286
+        - strip-never-conveyed@f48d29ae5d134205
+        - strip-serves-both@e9207503a7526e34
+        - strip-used-by-both@4169e68fc1815e1f
+        - strip-width-is-16ft@3df495d2c984c466
+        - strip-width-is-20ft@af632eb693eadb9e
+        - survey-2026-shows-strip@b69d1783084ec7df
+        - vole-both-sides@10b98ba28d8bb586
+        - vole-not-our-witness@2e76fe5328c9f936
+        - vole-phone@12f2fb26bac69423
+        - words-control@40708c6ace61ede2
+    cites:
+        - i-implied@7b46c691fe08bbbf
+        - i-landlock@7665ba2b6cb26710
+        - i-vole-conflicted@8e5c22c7210f22ba
+        - i-words-control@3fe984aed5ad616c
+        - s-bramble-account@6c66b9e7f6036992
+        - s-complaint@bbabd5e263752880
+        - s-county-clerk@61d32f68f0d68a69
+        - s-deed-2024@a4f8ee8fa231e02a
+        - s-docket@f71a6c4396c61d03
+        - s-neighbour-hearsay@032eecd077b0676a
+        - s-photos@704be190568a18f7
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-quill-depo@5f8f90d779cde0f3
+        - s-quill-letter@40ddf5ea2d05e206
+        - s-roster@57c34ad4e0fb2847
+        - s-rule-14-18@fc5accefae86c4d4
+        - s-strategy@4f1c1da0e96fd503
+        - s-survey-decl@af6567fdf78695e3
+        - s-vole-2026@722b29466f238246
+  at: "2026-09-01"
+  by: carl
+- name: timeline.causes
+  group: timeline
+  query: event -causes-> event sort id
+  query_hash: sha256:45947e4362cc68f9
+  pin:
+    set_hash: sha256:6942852efeeee183
+    count: 3
+    sort:
+        - id
+    nodes:
+        - e-counsel-withdraws@3a8a18b752c319b8
+        - e-fence@85aef6b2052a5062
+        - e-sale@3d5cc4a063e7542b
+    cites:
+        - s-client-note@f1bda2c176b4ff09
+        - s-docket@f71a6c4396c61d03
+  at: "2026-09-01"
+  by: carl
+- name: timeline.deadlines
+  group: timeline
+  query: event[at>2026-03-01] sort at, id
+  query_hash: sha256:fdcf4dad84e7eca2
+  pin:
+    set_hash: sha256:a89966b93dd55202
+    count: 3
+    sort:
+        - at
+        - id
+    nodes:
+        - d-substitution@3d46ed6282f5cd67
+        - e-mediation@8ed81c96063796a2
+        - d-limitations-horizon@679589ffc770227d
+    cites:
+        - i-substitution-window@62f3d9090232f717
+        - s-docket@f71a6c4396c61d03
+        - s-rule-14-18@fc5accefae86c4d4
+  at: "2026-09-01"
+  by: carl
+- name: timeline.events
+  group: timeline
+  query: event sort at, id
+  query_hash: sha256:f068283b674afd7a
+  pin:
+    set_hash: sha256:5ab0183186f6ed2e
+    count: 9
+    sort:
+        - at
+        - id
+    nodes:
+        - e-plat-recorded@aec1d0ddccbbce2c
+        - e-sale@3d5cc4a063e7542b
+        - e-fence@85aef6b2052a5062
+        - e-complaint@7e1c2b58cabcc42f
+        - e-answer@f5f6295ad662fba9
+        - e-counsel-withdraws@3a8a18b752c319b8
+        - d-substitution@3d46ed6282f5cd67
+        - e-mediation@8ed81c96063796a2
+        - d-limitations-horizon@679589ffc770227d
+    cites:
+        - i-substitution-window@62f3d9090232f717
+        - s-client-note@f1bda2c176b4ff09
+        - s-docket@f71a6c4396c61d03
+        - s-plat-1962@ead0541b54ebbfc0
+        - s-rule-14-18@fc5accefae86c4d4
+  at: "2026-09-01"
+  by: carl

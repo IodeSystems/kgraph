@@ -1,0 +1,226 @@
+# kgraph standing queries — what was asked, and the answer on record.
+# A diff here is a question to re-ask, not a merge conflict.
+- name: appeal.actions
+  group: appeal
+  query: action[status=asserted] sort id
+  query_hash: sha256:f4c8cb765e317034
+  pin:
+    set_hash: sha256:73ee24c46ed11ff2
+    count: 3
+    sort:
+        - id
+    nodes:
+        - a-file-appeal@9066b2fbace1791a
+        - a-get-itemised-bill@805b25a70d2a7969
+        - a-get-network-roster@d02387f759ba1b82
+    cites:
+        - s-appeal-form@14d3efc36f612955
+        - s-eob@f0dd209ab2913459
+  at: "2026-09-01"
+  by: carl
+- name: appeal.blocked
+  group: appeal
+  query: action -requires-> action sort id
+  query_hash: sha256:f113c5a60a08f925
+  pin:
+    set_hash: sha256:332262c9aa0ebb17
+    count: 1
+    sort:
+        - id
+    nodes:
+        - a-file-appeal@9066b2fbace1791a
+    cites:
+        - s-eob@f0dd209ab2913459
+  at: "2026-09-01"
+  by: carl
+- name: appeal.deadline
+  group: appeal
+  query: event sort at, id
+  query_hash: sha256:f068283b674afd7a
+  pin:
+    set_hash: sha256:f9bfd13c659fec93
+    count: 4
+    sort:
+        - at
+        - id
+    nodes:
+        - e-eob-issued@9ce263a70e4f5e60
+        - d-appeal-deadline@7e0706a9f3e9a617
+        - d-escalate-warning@5db6ec98b1186b7d
+        - d-collections@b59eb9e42a38faff
+    cites:
+        - i-appeal-window@27f70311954e95b0
+        - s-eob@f0dd209ab2913459
+        - s-statement@2cf5beff5855b357
+  at: "2026-09-01"
+  by: carl
+- name: appeal.prereqs
+  group: appeal
+  query: 'action -member_of-> #g-appeal-ready sort id'
+  query_hash: sha256:85492a90c14abf46
+  pin:
+    set_hash: sha256:601918a53ddd877f
+    count: 2
+    sort:
+        - id
+    nodes:
+        - a-get-itemised-bill@805b25a70d2a7969
+        - a-get-network-roster@d02387f759ba1b82
+    cites:
+        - s-appeal-form@14d3efc36f612955
+        - s-eob@f0dd209ab2913459
+  at: "2026-09-01"
+  by: carl
+- name: billing.amounts
+  group: billing
+  query: claim[status=asserted] -about-> entity sort id
+  query_hash: sha256:20f4662c093b2439
+  pin:
+    set_hash: sha256:f95f620238cfa70c
+    count: 7
+    sort:
+        - id
+    nodes:
+        - allowed-amount@b5dd4ae41035a819
+        - balance@a6bf81dada037840
+        - billed-amount@6b447f4a619a9455
+        - plan-is-ppo@1d5e89aa5393475c
+        - provider-npi@7280098450c7a328
+        - provider-out-of-network@51b3a8e1f5d4a3e4
+        - rep-said-in-network@dfde556fdf4126a4
+    cites:
+        - i-balance@fb2a71339ea1fb68
+        - s-call-note@d0f399bde0eefa6d
+        - s-eob@f0dd209ab2913459
+        - s-plan-doc@9cdd0007477fd80d
+        - s-statement@2cf5beff5855b357
+  at: "2026-09-01"
+  by: carl
+- name: billing.disputed
+  group: billing
+  query: claim[disputed] sort id
+  query_hash: sha256:78dd86ebd25eaa88
+  pin:
+    set_hash: sha256:35ef75a0f4804906
+    count: 1
+    sort:
+        - id
+    nodes:
+        - provider-out-of-network@51b3a8e1f5d4a3e4
+    cites:
+        - s-eob@f0dd209ab2913459
+  at: "2026-09-01"
+  by: carl
+- name: billing.open
+  group: billing
+  query: question[status=open] sort id
+  query_hash: sha256:e43806389f861692
+  pin:
+    set_hash: sha256:d94a32f79cb549f8
+    count: 2
+    sort:
+        - id
+    nodes:
+        - q-external-review@8a564a94142ab9fd
+        - q-network-status@2003dd2d3f335d15
+    unresolved:
+        - q-external-review
+        - q-network-status
+  at: "2026-09-01"
+  by: carl
+- name: coverage.holds-either-way
+  group: coverage
+  query: 'claim -supports-> #partial-coverage-owed sort id'
+  query_hash: sha256:75e775b74f38b921
+  pin:
+    set_hash: sha256:11326502cc45e56a
+    count: 1
+    sort:
+        - id
+    nodes:
+        - plan-is-ppo@1d5e89aa5393475c
+    cites:
+        - s-plan-doc@9cdd0007477fd80d
+  at: "2026-09-01"
+  by: carl
+- name: coverage.inferences
+  group: coverage
+  query: source[class=inference] sort id
+  query_hash: sha256:0d48943306443706
+  pin:
+    set_hash: sha256:35db87fea404b496
+    count: 3
+    sort:
+        - id
+    nodes:
+        - i-appeal-window@27f70311954e95b0
+        - i-balance@fb2a71339ea1fb68
+        - i-ppo@337a41466f7c8940
+    cites:
+        - i-appeal-window@27f70311954e95b0
+        - i-balance@fb2a71339ea1fb68
+        - i-ppo@337a41466f7c8940
+  at: "2026-09-01"
+  by: carl
+- name: coverage.records
+  group: coverage
+  query: source[class=record] sort id
+  query_hash: sha256:b090d01811cad62e
+  pin:
+    set_hash: sha256:eeff3283baa2269c
+    count: 3
+    sort:
+        - id
+    nodes:
+        - s-appeal-form@14d3efc36f612955
+        - s-eob@f0dd209ab2913459
+        - s-statement@2cf5beff5855b357
+    cites:
+        - s-appeal-form@14d3efc36f612955
+        - s-eob@f0dd209ab2913459
+        - s-statement@2cf5beff5855b357
+  at: "2026-09-01"
+  by: carl
+- name: parties.claims
+  group: parties
+  query: claim -about-> entity sort id
+  query_hash: sha256:66a9cc7db09a6a44
+  pin:
+    set_hash: sha256:f95f620238cfa70c
+    count: 7
+    sort:
+        - id
+    nodes:
+        - allowed-amount@b5dd4ae41035a819
+        - balance@a6bf81dada037840
+        - billed-amount@6b447f4a619a9455
+        - plan-is-ppo@1d5e89aa5393475c
+        - provider-npi@7280098450c7a328
+        - provider-out-of-network@51b3a8e1f5d4a3e4
+        - rep-said-in-network@dfde556fdf4126a4
+    cites:
+        - i-balance@fb2a71339ea1fb68
+        - s-call-note@d0f399bde0eefa6d
+        - s-eob@f0dd209ab2913459
+        - s-plan-doc@9cdd0007477fd80d
+        - s-statement@2cf5beff5855b357
+  at: "2026-09-01"
+  by: carl
+- name: parties.people
+  group: parties
+  query: entity sort id
+  query_hash: sha256:4996d5b84420b1c0
+  pin:
+    set_hash: sha256:1c318b03de253e1c
+    count: 3
+    sort:
+        - id
+    nodes:
+        - clinic@0ad5feeca429aa0e
+        - northwind@b9373697bec4603a
+        - wren-bramble@31abbecfbf9158ee
+    cites:
+        - s-eob@f0dd209ab2913459
+        - s-statement@2cf5beff5855b357
+  at: "2026-09-01"
+  by: carl

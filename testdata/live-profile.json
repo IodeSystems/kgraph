@@ -1,0 +1,35 @@
+{
+  "nodes": 2129,
+  "edges": 3866,
+  "kinds": {
+    "action": 56,
+    "claim": 894,
+    "entity": 63,
+    "event": 78,
+    "group": 44,
+    "question": 265,
+    "source": 729
+  },
+  "source_classes": {
+    "admission": 14,
+    "authority": 59,
+    "document": 98,
+    "inference": 110,
+    "interested": 270,
+    "observation": 58,
+    "record": 105,
+    "statement": 15
+  },
+  "citations_per_fact": {
+    "0": 29,
+    "1": 713,
+    "2": 101,
+    "3": 32,
+    "4": 15,
+    "5": 4
+  },
+  "unreferenced_sources": 420,
+  "contradictions": 98,
+  "open_questions": 227,
+  "withdrawn": 27
+}

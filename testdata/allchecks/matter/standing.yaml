@@ -1,0 +1,8 @@
+# One set carries one end of a correction and nothing beside it carries the
+# other, which is what `split-contradiction` reports.
+- name: open-side
+  group: gates
+  query: claim[id=c-gate-open]
+- name: widths
+  group: gates
+  query: claim[id=c-width]

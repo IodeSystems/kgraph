@@ -1,0 +1,482 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>kgraph</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root {
+    --bg:#0f1115; --panel:#161a21; --line:#242a34; --fg:#d6dae2; --dim:#8b93a1;
+    --accent:#7aa2f7; --warn:#e0af68; --bad:#f7768e; --good:#9ece6a; --sel:#bb9af7;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#fbfbfd; --panel:#fff; --line:#e2e5ea; --fg:#1c2027; --dim:#666e7c;
+            --accent:#2f5fd0; --warn:#9a6b00; --bad:#c0392b; --good:#2d7a2d; --sel:#7a3fd0; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-sans-serif,system-ui,sans-serif; }
+  header { display:flex; gap:.6rem; align-items:center; padding:.5rem .8rem;
+           border-bottom:1px solid var(--line); background:var(--panel); flex-wrap:wrap; }
+  header b { letter-spacing:.02em; }
+  input, textarea, select, button {
+    font:inherit; color:var(--fg); background:var(--bg);
+    border:1px solid var(--line); border-radius:6px; padding:.35rem .5rem;
+  }
+  textarea { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; width:100%; resize:vertical; }
+  button { cursor:pointer; background:var(--panel); }
+  button:hover { border-color:var(--accent); }
+  button.on { border-color:var(--accent); color:var(--accent); }
+  #dir { min-width:min(30ch,40vw); }
+  #pick { max-width:min(46ch,45vw); }
+  #map { cursor:grab; } #map.drag { cursor:grabbing; }
+  .zoom { position:absolute; right:.9rem; margin-top:.5rem; display:flex; gap:.25rem; }
+  .zoom button { padding:.1rem .45rem; }
+  #right { position:relative; }
+  main { display:grid; grid-template-columns:minmax(340px,2fr) 3fr; gap:0; height:calc(100vh - 49px); }
+  @media (max-width:820px) { main { grid-template-columns:1fr; height:auto; } }
+  section { overflow:auto; padding:.7rem .8rem; }
+  #left { border-right:1px solid var(--line); }
+  .tabs { display:flex; gap:.3rem; margin-bottom:.6rem; flex-wrap:wrap; }
+  .muted { color:var(--dim); }
+  .err { color:var(--bad); white-space:pre-wrap; font-family:ui-monospace,monospace; font-size:12px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  td, th { text-align:left; padding:.25rem .4rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--dim); font-weight:500; position:sticky; top:0; background:var(--panel); }
+  tr.row:hover { background:var(--panel); cursor:pointer; }
+  tr.row.sel { outline:1px solid var(--sel); }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+  pre { white-space:pre-wrap; word-break:break-word; background:var(--panel);
+        border:1px solid var(--line); border-radius:6px; padding:.6rem; }
+  .pill { display:inline-block; padding:0 .4rem; border-radius:999px; font-size:11px;
+          border:1px solid var(--line); color:var(--dim); }
+  .k-claim{color:var(--accent)} .k-question{color:var(--warn)} .k-action{color:var(--good)}
+  .k-entity{color:var(--sel)} .k-event{color:var(--fg)} .k-source{color:var(--dim)} .k-group{color:var(--bad)}
+  svg { width:100%; height:min(62vh,720px); display:block; touch-action:none; }
+  svg text { font-size:9px; fill:var(--dim); pointer-events:none; }
+  .lib button { margin:0 .3rem .3rem 0; font-size:12px; }
+  #detail a.go { color:var(--accent); text-decoration:none; }
+  #detail a.go:hover { text-decoration:underline; }
+  button.explore { font-size:11px; padding:.05rem .4rem; margin-left:.4rem; }
+  .stale { color:var(--warn); } .fresh { color:var(--good); } .tamper { color:var(--bad); }
+  #live { margin-left:auto; }
+  #live.on { color:var(--good); border-color:var(--good); }
+  #live.off { color:var(--dim); }
+  #live.hit { color:var(--accent); border-color:var(--accent); }
+</style>
+
+<header>
+  <b>kgraph</b>
+  <select id="pick" title="project"></select>
+  <input id="dir" placeholder="…or a path" size="26">
+  <button id="find" title="search for projects under that path">Find</button>
+  <input id="now" size="11" placeholder="YYYY-MM-DD" title="clock for @now">
+  <span id="scope" class="muted"></span>
+  <span id="live" class="pill" title="live reload">…</span>
+</header>
+
+<main>
+  <section id="left">
+    <div class="tabs">
+      <button data-tab="query" class="on">Query</button>
+      <button data-tab="status">Documents</button>
+      <button data-tab="scan">Problems</button>
+    </div>
+
+    <div id="tab-query">
+      <textarea id="q" rows="3" spellcheck="false">question[status=open] @now sort id</textarea>
+      <div class="tabs" style="margin:.4rem 0">
+        <button id="run">Run ⌘↵</button>
+        <label class="muted">depth
+          <select id="depth"><option>0</option><option selected>1</option><option>2</option></select>
+        </label>
+        <span id="count" class="muted"></span>
+      </div>
+      <div id="lib" class="lib"></div>
+      <div id="qerr" class="err"></div>
+      <table id="rows"></table>
+    </div>
+
+    <div id="tab-status" hidden></div>
+    <div id="tab-scan" hidden></div>
+  </section>
+
+  <section id="right">
+    <div class="zoom">
+      <button id="zin">+</button><button id="zout">−</button><button id="zfit">fit</button>
+    </div>
+    <svg id="map"></svg>
+    <div id="detail"></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = (p, q) => fetch(p + "?" + new URLSearchParams({dir: dir(), now: now(), ...q}))
+  .then(async r => { const b = await r.json();
+    if (!r.ok) throw new Error(b.detail || b.title || r.statusText); return b; });
+const dir = () => $("#dir").value.trim();
+const now = () => $("#now").value.trim();
+
+// Remember where you were; the scope is the one thing you never want to retype.
+for (const k of ["dir","now","q"]) {
+  const el = $("#"+k), v = localStorage.getItem("kg."+k);
+  if (v) el.value = v;
+  el.addEventListener("change", () => localStorage.setItem("kg."+k, el.value));
+}
+
+$(".tabs").parentElement.addEventListener("click", e => {
+  const t = e.target.dataset && e.target.dataset.tab; if (!t) return;
+  document.querySelectorAll("[data-tab]").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  for (const n of ["query","status","scan"]) $("#tab-"+n).hidden = n !== t;
+  if (t === "status") loadStatus();
+  if (t === "scan") loadScan();
+});
+
+$("#run").onclick = runQuery;
+$("#q").addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); runQuery(); }
+});
+$("#dir").addEventListener("change", boot);
+$("#depth").addEventListener("change", runQuery);
+
+$("#find").onclick = () => loadProjects($("#dir").value.trim());
+$("#pick").onchange = () => {
+  $("#dir").value = $("#pick").value;
+  localStorage.setItem("kg.dir", $("#pick").value);
+  boot(); watch(); runQuery();
+};
+
+// A path typed into a box is not discoverable. Ask the daemon what exists —
+// remembered projects first, then whatever is under the path given.
+async function loadProjects(under) {
+  const sel = $("#pick");
+  sel.innerHTML = `<option>searching…</option>`;
+  try {
+    const r = await fetch("/projects?" + new URLSearchParams(under ? {under, depth: 4} : {}))
+      .then(x => x.json());
+    sel.innerHTML = "";
+    if (!r.projects.length) {
+      sel.innerHTML = `<option value="">no projects found — give a path and press Find</option>`;
+      return;
+    }
+    for (const p of r.projects) {
+      const o = document.createElement("option");
+      o.value = p.root;
+      o.textContent = `${p.root.replace(/^\/home\/[^/]+/, "~")} @${p.branch}` +
+        ` · ${p.facts} facts · ${p.specs} docs${p.loaded ? " · open" : ""}`;
+      o.selected = p.root === dir();
+      sel.append(o);
+    }
+    if (!dir()) { $("#dir").value = r.projects[0].root; localStorage.setItem("kg.dir", $("#dir").value); }
+  } catch (e) { sel.innerHTML = `<option>${esc(e.message)}</option>`; }
+}
+
+async function boot() {
+  try {
+    const s = await api("/scopes", {});
+    const me = s.scopes.find(x => dir().startsWith(x.root)) || s.scopes[0];
+    $("#scope").textContent = me
+      ? `${me.root.split("/").pop()} @ ${me.branch} · ${me.nodes} nodes · ${me.specs} docs`
+      : "";
+    const lib = await api("/named", {}).catch(() => ({named: []}));
+    $("#lib").innerHTML = "";
+    for (const n of lib.named || []) {
+      const b = document.createElement("button");
+      b.textContent = "@" + n;
+      b.onclick = () => { $("#q").value = "@" + n; runQuery(); };
+      $("#lib").append(b);
+    }
+  } catch (e) { $("#scope").textContent = e.message; }
+}
+
+let rows = [];
+async function runQuery() {
+  $("#qerr").textContent = ""; $("#count").textContent = "…";
+  localStorage.setItem("kg.q", $("#q").value);
+  try {
+    const g = await api("/graph", {q: $("#q").value, depth: $("#depth").value, limit: 250});
+    rows = g.nodes.filter(n => n.matched);
+    $("#count").innerHTML = `${g.matched} rows` +
+      (g.truncated ? ` · <span class="stale">graph truncated at 250</span>` : "");
+    renderRows(); drawGraph(g);
+  } catch (e) { $("#qerr").textContent = e.message; $("#count").textContent = ""; }
+}
+
+function renderRows() {
+  const t = $("#rows");
+  t.innerHTML = "<tr><th>id</th><th>kind</th><th></th></tr>";
+  for (const n of rows) {
+    const tr = document.createElement("tr");
+    tr.className = "row"; tr.dataset.id = n.id;
+    tr.innerHTML = `<td><code>${esc(n.id)}</code></td>
+      <td class="k-${n.kind}">${n.kind}${n.status ? " · " + n.status : ""}</td>
+      <td>${esc(n.label).slice(0, 90)}</td>`;
+    tr.onclick = () => select(n.id);
+    t.append(tr);
+  }
+}
+
+async function select(id) {
+  document.querySelectorAll("tr.row").forEach(r => r.classList.toggle("sel", r.dataset.id === id));
+  highlight(id);
+  try {
+    const n = await api("/node", {id});
+    // Group edges by direction and type, so the panel reads as "what does this
+    // connect to" rather than a flat list to scan.
+    const out = n.edges.filter(e => e.src === n.id), inc = n.edges.filter(e => e.dst === n.id);
+    const group = es => {
+      const by = {};
+      for (const e of es) (by[e.type] ||= []).push(e.src === n.id ? e.dst : e.src);
+      return Object.entries(by).sort().map(([t, ids]) =>
+        `<tr><td class="muted">${esc(t)}</td><td>` + ids.sort().map(i =>
+          `<a href="#" class="go" data-id="${esc(i)}"><code>${esc(i)}</code></a>`).join("<br>") +
+        `</td></tr>`).join("");
+    };
+    $("#detail").innerHTML =
+      `<h3 style="margin:.8rem 0 .3rem"><code>${esc(n.id)}</code>
+         <span class="pill">${esc(n.sem_hash || "")}</span>
+         <button class="explore" data-id="${esc(n.id)}">explore from here</button></h3>` +
+      (n.holes && n.holes.length
+        ? `<p class="stale">unresolved — conditional on ` +
+          n.holes.map(h => `<a href="#" class="go" data-id="${esc(h)}">${esc(h)}</a>`).join(", ") + `</p>`
+        : "") +
+      (n.used_by && n.used_by.length
+        ? `<p class="muted">pinned by ${n.used_by.map(esc).join(", ")}</p>`
+        : `<p class="muted">not pinned by any document — nothing goes stale when this changes</p>`) +
+      `<pre>${esc(n.rendered)}</pre>` +
+      (out.length ? `<p class="muted">points at</p><table>${group(out)}</table>` : "") +
+      (inc.length ? `<p class="muted">pointed at by</p><table>${group(inc)}</table>` : "") +
+      (!n.edges.length ? `<p class="muted">no edges — this fact is isolated</p>` : "");
+    $("#detail").querySelectorAll("a.go").forEach(a =>
+      a.onclick = e => { e.preventDefault(); select(a.dataset.id); });
+    $("#detail").querySelectorAll("button.explore").forEach(b =>
+      b.onclick = () => { $("#q").value = "#" + b.dataset.id; $("#depth").value = "2"; runQuery(); });
+  } catch (e) { $("#detail").innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+// ── graph ──────────────────────────────────────────────────────────────
+// A hand-rolled force layout: the page must stay self-contained (no CDN), and
+// the whole simulation is ~30 lines.
+let sim = null, view = null;   // view = {x, y, w, h} in graph coordinates
+
+// Pan and zoom by moving the viewBox — no library, and it composes with the
+// running simulation because the layout works in its own coordinate space.
+function setView(v) { view = v; $("#map").setAttribute("viewBox", `${v.x} ${v.y} ${v.w} ${v.h}`); }
+
+function zoomBy(k, cx, cy) {
+  if (!view) return;
+  const w = Math.max(60, Math.min(20000, view.w * k)), h = view.h * (w / view.w);
+  setView({x: cx - (cx - view.x) * (w / view.w), y: cy - (cy - view.y) * (h / view.h), w, h});
+}
+
+function fitView(nodes) {
+  if (!nodes || !nodes.length) return;
+  const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y), pad = 60;
+  const x0 = Math.min(...xs) - pad, x1 = Math.max(...xs) + pad;
+  const y0 = Math.min(...ys) - pad, y1 = Math.max(...ys) + pad;
+  setView({x: x0, y: y0, w: Math.max(120, x1 - x0), h: Math.max(120, y1 - y0)});
+}
+
+(function wireViewport() {
+  const svg = $("#map");
+  const pt = e => {
+    const r = svg.getBoundingClientRect();
+    return [view.x + (e.clientX - r.left) / r.width * view.w,
+            view.y + (e.clientY - r.top) / r.height * view.h];
+  };
+  svg.addEventListener("wheel", e => {
+    if (!view) return;
+    e.preventDefault();
+    const [cx, cy] = pt(e);
+    zoomBy(e.deltaY > 0 ? 1.12 : 1 / 1.12, cx, cy);
+  }, {passive: false});
+
+  let drag = null;
+  svg.addEventListener("pointerdown", e => {
+    if (!view || e.target.closest(".nd")) return;   // clicking a node selects it
+    drag = {sx: e.clientX, sy: e.clientY, ox: view.x, oy: view.y};
+    svg.classList.add("drag"); svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const r = svg.getBoundingClientRect();
+    setView({...view,
+      x: drag.ox - (e.clientX - drag.sx) / r.width * view.w,
+      y: drag.oy - (e.clientY - drag.sy) / r.height * view.h});
+  });
+  const end = () => { drag = null; svg.classList.remove("drag"); };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+
+  $("#zin").onclick  = () => view && zoomBy(1/1.3, view.x + view.w/2, view.y + view.h/2);
+  $("#zout").onclick = () => view && zoomBy(1.3,   view.x + view.w/2, view.y + view.h/2);
+  $("#zfit").onclick = () => fitView(lastNodes);
+})();
+
+let lastNodes = null;
+function drawGraph(g) {
+  const svg = $("#map"), W = svg.clientWidth || 800, H = svg.clientHeight || 500;
+  if (sim) cancelAnimationFrame(sim);
+  // Seed on a circle sized to the node count, so the sim spreads outward from a
+  // sane starting point instead of untangling a knot.
+  const R = Math.min(W, H) * 0.36;
+  const nodes = g.nodes.map((n, i) => {
+    const a = (i / g.nodes.length) * Math.PI * 2;
+    return {...n, x: W/2 + Math.cos(a)*R, y: H/2 + Math.sin(a)*R, vx: 0, vy: 0};
+  });
+  const idx = new Map(nodes.map((n, i) => [n.id, i]));
+  const links = g.edges.filter(e => idx.has(e.src) && idx.has(e.dst))
+    .map(e => ({s: idx.get(e.src), t: idx.get(e.dst), type: e.type}));
+
+  // Scale the forces to the crowd: a 12-node result and a 250-node one need very
+  // different spacing to stay readable.
+  const rest = Math.max(70, Math.min(150, 900 / Math.sqrt(nodes.length + 1)));
+  const rep  = rest * rest * 1.6;
+  const cut  = (rest * 5) ** 2;
+
+  let ticks = 0;
+  const step = () => {
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = nodes[j];
+        const dx = b.x - a.x, dy = b.y - a.y, d2 = dx*dx + dy*dy || 1;
+        if (d2 > cut) continue;
+        const d = Math.sqrt(d2), f = rep / d2;
+        a.vx -= f*dx/d; a.vy -= f*dy/d; b.vx += f*dx/d; b.vy += f*dy/d;
+      }
+      a.vx += (W/2 - a.x) * 0.002; a.vy += (H/2 - a.y) * 0.002;
+    }
+    for (const l of links) {
+      const a = nodes[l.s], b = nodes[l.t];
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1;
+      const f = (d - rest) * 0.012;
+      a.vx += f*dx/d; a.vy += f*dy/d; b.vx -= f*dx/d; b.vy -= f*dy/d;
+    }
+    const m = 26;
+    for (const n of nodes) {
+      n.vx *= 0.88; n.vy *= 0.88;
+      n.x = Math.max(m, Math.min(W-m, n.x + n.vx));
+      n.y = Math.max(m, Math.min(H-m, n.y + n.vy));
+    }
+    paint(svg, nodes, links);
+    if (ticks === 40 || ticks === 319) fitView(nodes);
+    if (++ticks < 320) sim = requestAnimationFrame(step);
+  };
+  lastNodes = nodes;
+  setView({x: 0, y: 0, w: W, h: H});
+  step();
+}
+
+function paint(svg, nodes, links) {
+  const l = links.map(k => {
+    const a = nodes[k.s], b = nodes[k.t];
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
+      stroke="var(--line)" stroke-width="${k.type === "contradicts" ? 2 : 1}"
+      ${k.type === "contradicts" ? 'stroke-dasharray="3 2"' : ""}/>`;
+  }).join("");
+  nodes._placed = [];
+  const n = nodes.map(d =>
+    `<g class="nd" data-id="${esc(d.id)}" style="cursor:pointer">
+       <circle cx="${d.x}" cy="${d.y}" r="${d.matched ? 6 : 3.5}"
+         fill="currentColor" class="k-${d.kind}"
+         opacity="${d.matched ? 1 : .45}"/>
+       ${label(d, nodes)}
+     </g>`).join("");
+  svg.innerHTML = l + n;
+  svg.querySelectorAll(".nd").forEach(el => el.onclick = () => select(el.dataset.id));
+}
+
+// Labels are the first thing to make a graph unreadable, so drop any that would
+// land on top of one already placed. A missing label is recoverable — click the
+// node — whereas an unreadable pile is not.
+function label(d, nodes) {
+  if (!d.matched) return "";
+  nodes._placed = nodes._placed || [];
+  if (d._first) nodes._placed = [];
+  for (const p of nodes._placed) {
+    if (Math.abs(p.x - d.x) < 96 && Math.abs(p.y - d.y) < 11) return "";
+  }
+  nodes._placed.push({x: d.x, y: d.y});
+  return `<text x="${d.x + 9}" y="${d.y + 3}">${esc(d.id).slice(0, 24)}</text>`;
+}
+
+function highlight(id) {
+  $("#map").querySelectorAll(".nd circle").forEach(c => {
+    const on = c.parentElement.dataset.id === id;
+    c.setAttribute("stroke", on ? "var(--sel)" : "none");
+    c.setAttribute("stroke-width", on ? 3 : 0);
+  });
+}
+
+// ── documents + problems ───────────────────────────────────────────────
+async function loadStatus() {
+  const el = $("#tab-status");
+  el.innerHTML = `<p class="muted">loading…</p>`;
+  try {
+    const s = await api("/status", {});
+    const d = await api("/diff", {}).catch(() => ({changed: []}));
+    const deltas = new Map((d.changed || []).map(c => [c.spec, c.delta || []]));
+    el.innerHTML = s.specs.map(x => {
+      const fresh = x.state.length === 1 && x.state[0] === "fresh";
+      const cls = fresh ? "fresh" : x.state.includes("managed-tampered") ? "tamper" : "stale";
+      const lines = deltas.get(x.spec) || [];
+      return `<p><code>${esc(x.spec)}</code><br>
+        <span class="${cls}">${x.state.map(esc).join(", ")}</span>` +
+        (lines.length ? `<br>` + lines.map(l => `<span class="muted">· ${esc(l)}</span>`).join("<br>") : "") +
+        `</p>`;
+    }).join("");
+  } catch (e) { el.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+async function loadScan() {
+  const el = $("#tab-scan");
+  el.innerHTML = `<p class="muted">scanning…</p>`;
+  try {
+    const s = await api("/scan", {});
+    el.innerHTML = `<p class="muted">${s.scope.nodes} nodes · ${s.scope.edges} edges ·
+      ${s.scope.specs} docs · ${s.scope.errors} error(s)</p>` +
+      (s.problems && s.problems.length
+        ? `<pre>${esc(s.problems.join("\n"))}</pre>`
+        : `<p class="fresh">no problems</p>`);
+  } catch (e) { el.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// ── live reload ────────────────────────────────────────────────────────
+// The daemon already re-reads on change; without this the page keeps showing a
+// resolution that is no longer true, which is the exact failure the tool exists
+// to prevent — in the tool's own console.
+let es = null, liveTimer = null;
+function live(state, note) {
+  const el = $("#live");
+  el.className = "pill " + state;
+  el.textContent = {on: "live", off: "offline", hit: "reloaded"}[state] || "…";
+  if (note) el.title = note;
+}
+
+function watch() {
+  if (es) { es.close(); es = null; }
+  if (!dir()) { live("off", "no project selected"); return; }
+  es = new EventSource("/events?" + new URLSearchParams({dir: dir()}));
+  es.onopen = () => live("on", "watching " + dir());
+  es.onerror = () => live("off", "daemon unreachable — retrying");
+  es.addEventListener("change", e => {
+    let at = "";
+    try { at = JSON.parse(e.data).at || ""; } catch {}
+    live("hit", "changed " + at);
+    clearTimeout(liveTimer);
+    // Coalesce: an editor save can touch several files in quick succession, and
+    // one reload per keystroke-burst is the point.
+    liveTimer = setTimeout(async () => {
+      await boot();
+      if (!$("#tab-query").hidden && $("#q").value.trim()) await runQuery();
+      if (!$("#tab-status").hidden) await loadStatus();
+      if (!$("#tab-scan").hidden) await loadScan();
+      live("on", "reloaded " + at);
+    }, 250);
+  });
+}
+
+loadProjects().then(() => { boot(); watch(); if (dir()) runQuery(); });
+</script>

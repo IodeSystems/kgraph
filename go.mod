@@ -47,3 +47,15 @@ require (
 )
 
 replace github.com/iodesystems/raglit => ../raglit
+
+// v0.1.0 WAS PUBLISHED IN ERROR AND MUST NOT BE USED.
+//
+// It was tagged on 2026-09-06 during a scrub of this repository, before that
+// scrub was finished, and the module mirror cached it. The mirror is immutable
+// by design: deleting the tag, rewriting the history and recreating the
+// repository — all of which happened — do not reach a cached version. Retracting
+// it is what tells the `go` command and pkg.go.dev to stop offering it.
+//
+// A retraction hides a version. It does not delete one. Removal of the cached
+// copy is a separate request to the mirror's operators.
+retract v0.1.0

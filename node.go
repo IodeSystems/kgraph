@@ -565,6 +565,18 @@ func bodyTokens(body string) map[string]bool {
 	return out
 }
 
+// Similarity scores two pieces of prose for being the same thing said twice.
+//
+// Set overlap over the union of their content tokens, after NormalizeBody folds
+// case and punctuation: 1 for identical wording, 0 for nothing in common. Word
+// ORDER is deliberately ignored — "when did it start" and "it started when"
+// are one question — and single-character tokens are dropped.
+//
+// IT IS A SCORE AND NOT A VERDICT. Compare it against NearDuplicate rather than
+// a literal, so that retuning the threshold reaches every caller. See the note
+// there for why this is exported at all.
+func Similarity(a, b string) float64 { return jaccard(bodyTokens(a), bodyTokens(b)) }
+
 // jaccard is set overlap over union: 1 for identical token sets, 0 for disjoint.
 func jaccard(a, b map[string]bool) float64 {
 	if len(a) == 0 || len(b) == 0 {

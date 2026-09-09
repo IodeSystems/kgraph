@@ -490,12 +490,23 @@ func (g *Graph) Lookup(id string) (*Node, bool) {
 	return nil, false
 }
 
-// nearDuplicate is the token-overlap score above which two same-kind facts are
+// NearDuplicate is the token-overlap score above which two same-kind facts are
 // reported as possibly the same fact. Tuned against the corpus: the real
 // duplicate it was written to catch scores 0.88, and the highest-scoring
 // deliberate pair — a sworn statement and the rebuttal that shares its whole
 // vocabulary — scores 0.42.
-const nearDuplicate = 0.72
+//
+// EXPORTED, WITH Similarity, because a second corpus needed the same judgement
+// about a different kind of text. caselit's interview generates questions and
+// was producing near-duplicate pairs of them; its questions live in its own
+// store rather than as nodes here, so it cannot run the graph pass — but the
+// RULE for "are these two the same thing said twice" must not be written a
+// second time. That is how the evidentiary ladder drifted before `ClassRank`
+// and `ClassLadder` were exported for the same reason.
+//
+// Callers get the threshold as well as the function so that a reweight here
+// moves them too. Anyone comparing against a literal 0.72 has forked it.
+const NearDuplicate = 0.72
 
 // maxBucket and nearBudget bound the quadratic pass. A token shared by more than
 // maxBucket nodes of one kind discriminates nothing, and nearBudget caps total
@@ -651,7 +662,7 @@ func (g *Graph) checkDuplicates() []Diag {
 				seen[pair] = true
 				compared++
 				score := jaccard(toks[x], toks[y])
-				if score < nearDuplicate {
+				if score < NearDuplicate {
 					continue
 				}
 				// Two facts joined by an edge are related on purpose. A claim and

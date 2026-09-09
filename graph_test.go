@@ -59,11 +59,11 @@ func TestNearDuplicateThresholdSeparatesRealFromDesigned(t *testing.T) {
 	designed := jaccard(
 		bodyTokens("Wren swore the driveway and property corners were not clearly visible"),
 		bodyTokens("The driveway and the property corners were clearly visible, and the deeded 25-ft strip bisects the driveway at its true location"))
-	if dup < nearDuplicate {
-		t.Errorf("the duplicate this check exists for scores %.2f, under the %.2f threshold", dup, nearDuplicate)
+	if dup < NearDuplicate {
+		t.Errorf("the duplicate this check exists for scores %.2f, under the %.2f threshold", dup, NearDuplicate)
 	}
-	if designed >= nearDuplicate {
-		t.Errorf("a designed rebuttal pair scores %.2f, at or over the %.2f threshold", designed, nearDuplicate)
+	if designed >= NearDuplicate {
+		t.Errorf("a designed rebuttal pair scores %.2f, at or over the %.2f threshold", designed, NearDuplicate)
 	}
 }
 

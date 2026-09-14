@@ -384,8 +384,12 @@ var legal = Dialect{
 		// `note` carries what a closed set cannot: a request number, which clerk,
 		// what the objection said. "Subpoena, nothing" with no reference is not
 		// something anybody can follow up or testify from.
+		// `expected` is when an answer to an open attempt is due, as somebody
+		// wrote it down — AUTHORED, never a default duration, because what is a
+		// normal wait for a records request is not the vocabulary's to decide. A
+		// consumer can then say "overdue since" off a date a person gave.
 		"attempt": {kind: KEvent, keys: map[string]bool{
-			"actor": true, "how": true, "found": true, "note": true,
+			"actor": true, "how": true, "found": true, "note": true, "expected": true,
 		}},
 	},
 }

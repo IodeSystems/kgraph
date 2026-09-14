@@ -541,7 +541,7 @@ func TestLegalCarriesTheConstructionVocabulary(t *testing.T) {
 	if att.Governs("by") {
 		t.Error("`by` is source-only; an attempt's actor is `actor`")
 	}
-	for _, k := range []string{"actor", "how", "found", "note"} {
+	for _, k := range []string{"actor", "how", "found", "note", "expected"} {
 		if !att.Governs(k) {
 			t.Errorf("an attempt does not govern %q", k)
 		}

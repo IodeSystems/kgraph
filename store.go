@@ -1,6 +1,7 @@
 package kgraph
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -521,16 +522,35 @@ func ExportJSONL(st Store, path string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	var b strings.Builder
-	b.WriteString("// kgraph assertion log — an EXPORT of the store, not the store.\n")
-	b.WriteString("// Every line records who asserted what and when. Rebuild with `kg import`.\n")
-	for _, a := range log {
-		line, merr := json.Marshal(a)
+	// A LINE ALREADY IN THE FILE IS NEVER REWRITTEN. The log is append-only, so
+	// when the file on disk already holds the store's first n assertions, those
+	// bytes are kept exactly as they are and only the rest is added. Re-encoding
+	// them changed lines nobody touched: a corpus migrated by another hand keeps
+	// its own key order, and `json.Marshal` escaped every `&`. One restatement in a
+	// consumer's matter rewrote 22 unrelated lines, which is a diff nobody can
+	// review. Anything that is not a clean prefix — an edited line, a reordered
+	// log, an unreadable file — falls back to writing the whole log from the store.
+	var b bytes.Buffer
+	kept, n := keptPrefix(path, log)
+	if kept != nil && n == len(log) {
+		return len(log), nil // the file already says everything the store does
+	}
+	if kept != nil {
+		b.Write(kept)
+		if kept[len(kept)-1] != '\n' {
+			b.WriteByte('\n')
+		}
+	} else {
+		n = 0
+		b.WriteString("// kgraph assertion log — an EXPORT of the store, not the store.\n")
+		b.WriteString("// Every line records who asserted what and when. Rebuild with `kg import`.\n")
+	}
+	for _, a := range log[n:] {
+		line, merr := encodeAssertion(a)
 		if merr != nil {
 			return 0, merr
 		}
 		b.Write(line)
-		b.WriteByte('\n')
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return 0, err
@@ -554,7 +574,7 @@ func ExportJSONL(st Store, path string) (int, error) {
 		return 0, terr
 	}
 	defer func() { _ = os.Remove(tmp.Name()) }() // no-op once the rename succeeds
-	if _, werr := tmp.WriteString(b.String()); werr != nil {
+	if _, werr := tmp.Write(b.Bytes()); werr != nil {
 		_ = tmp.Close()
 		return 0, werr
 	}
@@ -573,6 +593,56 @@ func ExportJSONL(st Store, path string) (int, error) {
 		return 0, cerr
 	}
 	return len(log), os.Rename(tmp.Name(), path)
+}
+
+// encodeAssertion is one line of the log, newline included.
+//
+// HTML ESCAPING OFF. The log is read by people and by git, never by a browser,
+// and `json.Marshal` writes `&` as a six-character unicode escape — a claim about "Quill & Bramble"
+// came back out as a line nobody wrote.
+func encodeAssertion(a Assertion) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(a); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// keptPrefix returns the file's bytes and how many of log's assertions they
+// already hold, or nil when the file is not a clean prefix of the log.
+//
+// Lines are compared by what they SAY, not how they are spelled: each is decoded
+// and re-encoded next to the store's assertion, so a line in another key order,
+// or with an unescaped `&`, still matches the assertion it records. Headers and
+// blank lines are skipped exactly as `ReadAssertionLog` skips them.
+func keptPrefix(path string, log []Assertion) ([]byte, int) {
+	b, err := os.ReadFile(path)
+	if err != nil || len(b) == 0 {
+		return nil, 0
+	}
+	n := 0
+	for _, ln := range strings.Split(string(b), "\n") {
+		t := strings.TrimSpace(ln)
+		if t == "" || strings.HasPrefix(t, "//") {
+			continue
+		}
+		if n >= len(log) {
+			return nil, 0 // the file says more than the store does
+		}
+		var a Assertion
+		if json.Unmarshal([]byte(t), &a) != nil {
+			return nil, 0
+		}
+		have, herr := encodeAssertion(a)
+		want, werr := encodeAssertion(log[n])
+		if herr != nil || werr != nil || !bytes.Equal(have, want) {
+			return nil, 0
+		}
+		n++
+	}
+	return b, n
 }
 
 // ImportJSONL replays an exported log into a store.
